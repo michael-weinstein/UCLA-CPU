@@ -1,0 +1,51 @@
+Identify populations
+Iterate over VCF data lines
+	Drop anything not bi-allelic
+	Count 0 and 1 allele calls
+	Output
+		Counts of each allele per population
+			[Ref]	Pop1	Pop2	Pop3...
+			[Alt]	Pop1	Pop2	Pop3...
+		Separate file listing accepted loci
+			Chrom	Pos
+
+
+Pseudocode
+
+vcf = open('file','r')
+skip over lines starting with '##'
+read line that starts with '#' to get our population IDs
+split line on tabs
+ignore constant VCF columns
+extract group ID from column headers
+	Regex for ^\D+
+	Add returned regex value to a list identifying which group the column belongs to
+iterate over datalines
+	split the line on tabs
+	drop lines that are not bi-allelic
+		if in column4 there is a ',' skip the line
+	   	else
+	initialize a dictionary of dictionaries 
+		data{population}{'0'} = 0
+		data{population}{'1'} = 0
+		for each population
+	for column 9 through last column
+		get column[0]
+		if column[0] is a '.' (indicates missing data
+			go to the next column
+			else
+		data{population}{column[0]} += 1
+		do the same for column[2]
+	OUTPUTS
+		accepted loci file
+						Chr	Pos	Ref
+						Chr	Pos	Alt
+			write column[0]\t column[1]\t column[3]
+			write column[0]\t column[1]\t column[4]
+	
+		frequency data file
+			iterate over alleles (0 and 1)
+				iterate over populations IN ORDER
+					write data{population}{allele}\t
+				write \n
+	
