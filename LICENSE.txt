@@ -1,4 +1,4 @@
-The MIT License (MIT)
+The modified MIT License (MIT)
 
 Copyright (c) 2015 UCLA Collaboratory Python Users
 
