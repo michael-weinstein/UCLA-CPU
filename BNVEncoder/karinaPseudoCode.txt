@@ -10,7 +10,7 @@ Iterate over VCF data lines
 			Chrom	Pos
 
 
-Pseudocode
+Procedural Program Pseudocode
 
 vcf = open('file','r')
 skip over lines starting with '##'
@@ -48,4 +48,134 @@ iterate over datalines
 				iterate over populations IN ORDER
 					write data{population}{allele}\t
 				write \n
+				
+				
+Object-Oriented Program Pseudocode
+
+object requirements
+	
+	Line(object)
+		initialize with a string containing an input line
+		we will always need to split the lines on some delimiter	line.split(delimiter string default to tab)
+		
+	Header(line)
+		still gets initialized with the same info (inherits the original initializer)
+		still needs to be split on a delimiter (inherits this method from the line class too)
+		we need to get back an ordered array of group IDs by column												CLASS PROPERTY 	header.columnGroupIDs
+		we also could probably generate a dictionary of empty lists containing all the possible groups   		CLASS PROPERTY 	header.groupHash
+		might also be useful to generate an alphabetic list of groups for our matrix							CLASS PROPERTY 	header.outputGroupColumns
+		and a supervisor function to tell it to make these values												CLASS METHOD	header.generate()
+		
+	Data(line)
+		inherits same patterns from before
+		needs to check the integrity of the line for at least column number										CLASS PROPERTY 	data.integrityCheck
+		needs to check if the line is biallelic																	CLASS PROPERTY	data.isBiallelic
+		needs to give us back an output line of delimited reference counts in header.outputGroupColumns order	CLASS PROPERTY	data.refOutput
+		and do the same thing for the alternate allele															CLASS PROPERTY	data.altOutput
+		for the list of loci, we need an output of the contig, position, ref, and alt (with a delimiter)		CLASS PROPERTY	data.locusInfo
+		and because this will probably be the most complex object, let's make a supervisor function				CLASS METHOD	data.createOutputs()
+
+main program:		
+	vcf = open('input','r')
+	outputFile = open('output','w')
+	read a line from the file
+	while line is not blank (indicating end of file):
+		if the line starts with ##
+			move on to the next line
+		if the line starts with #
+			header = Header(line)
+			header.generate()
+			
+		if the line does not start with any #
+			data = Data(line)
+			if data.integrityCheck:
+				data.createOutputs()
+				outputFile.write(data.refOutput + "\n")
+				outputFile.write(data.altOutput + "\n")
+			else:
+				show the user a warning
+		line = new file from vcf
+	close vcf
+	close outputFile
+	notify user that the program finished successfully
+	
+OBJECTS
+
+line(object):
+	initializer (line, delimiter = "\t")  requires an argument of a line from the input file, can take an optional argument of a delimiter, but this defaults to tab if none is given
+		create an array of the input line, split on the delimiter
+		
+Header(line):
+	using inherited initializer, but also needs needs information from the headers
+	
+	def getColumnGroupIDs():
+		for each element in the line array with sample data
+			get the sample ID using a regex for the first non-number characters of the sample name
+			append the ID to a list
+		return the list
+		
+	def getOutputGroupColumns():
+		groupList = self.columnGroupIDs
+		reduce groupList to remove duplicate group IDs
+		sort groupList to put in order
+		return groupList
+		
+	def getGroupHash():
+		initialize an empty dictionary called groupHash
+		for group in self.outputGroupColumns:
+			groupHash for each group is set an array containing two zero values
+		return groupHash
+		
+	def generate(): (supervisor function)
+		self.columnGroupIDs = columnGroupIDs()
+		self.outputGroupColumns = outputGroupColumns()
+		self.groupHash = getGroupHash()
+		
+Data(line)
+	initializer (line, header)
+	
+	def integrityCheck:
+		self.dataFields = all the columns after the standard VCF columns
+		if self.dataFields length is different from the length of header.outputGroupColumns
+			return False
+		else
+			return True
+			
+	def isBiallelic:
+		if there is a comma in the alternate alleles column
+			return False
+	
+	def createOutputs:
+		groupHash = header.grouphash
+		iterate over self.dataFields     MAINTAIN A COUNTER
+			genotype = the first 3 characters of each field ([allele1]/[allele2])
+			if the first character of genotype is a ".":
+				there was no genotype called, proceed to the next field
+			else
+				use the first character and then the third to increment groupHash of header.columnGroupIDs[counter][character should be a "0" or "1"]
+		return groupHash
+		
+	def refOutput (can take an optional delimiter, default to tab):
+		initialize an empty string for output
+		for each column in header.outputGroupColumns
+			add self.groupHash[column][0] to the string followed by a delimiter
+		return output
+	
+	def altOutput (can take an optional delimiter, default to tab):   #note that we could just merge this with the above method, since they are the same except for which list position they are using
+		initialize an empty string for output
+		for each column in header.outputGroupColumns
+			add self.groupHash[column][1] to the string followed by a delimiter
+		return output
+		
+	def locusInfo (can take an optional delimiter, default to tab):
+		initialize an empty string for output
+		for the contig, position, ref, and alt columns in the dataline:
+			add the value and a delimiter to the output string
+		return output
+		
+	def createOutputs:
+		self.refOutput = self.refOutput()
+		self.altOutput = self.altOutput()
+		self.locusInfo = self.locusInfo()
+
 	
